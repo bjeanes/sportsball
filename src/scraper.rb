@@ -9,7 +9,7 @@ include ActiveSupport::Inflector
 
 $main_content_xpath = "/html/body/table/tr[2]/td/table/tr[1]/td[4]"
 
-data_dir = File.expand_path("../../data", __FILE__)
+data_dir = File.expand_path("../../resources/corpus", __FILE__)
 
 australian_open = 'http://www.asapsports.com/show_events.php?category=7&year=2013&title=AUSTRALIAN+OPEN'
 

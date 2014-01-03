@@ -2,14 +2,19 @@ require 'rubygems'
 require 'mechanize'
 require 'json'
 require 'active_support/inflector/transliterate'
+require 'active_support/inflector/methods'
 require 'fileutils'
 require 'date'
+require 'set'
 
 include ActiveSupport::Inflector
 
 $main_content_xpath = "/html/body/table/tr[2]/td/table/tr[1]/td[4]"
 
-data_dir = File.expand_path("../../resources/corpus", __FILE__)
+data_dir = File.expand_path("../../resources", __FILE__)
+corpus   = File.join(data_dir, "corpus")
+men      = Set.new(File.readlines(File.join(data_dir, "men.txt")).map   { |n| parameterize(n) })
+women    = Set.new(File.readlines(File.join(data_dir, "women.txt")).map { |n| parameterize(n) })
 
 australian_open = 'http://www.asapsports.com/show_events.php?category=7&year=2013&title=AUSTRALIAN+OPEN'
 
@@ -26,10 +31,11 @@ agent.get(australian_open) do |page|
     agent.transact do
       day_page = agent.click day_link
 
-      sport = day_page.at($main_content_xpath + "/h1").text
-      year = day_page.at($main_content_xpath + "/h2").text
+      sport = titleize day_page.at($main_content_xpath + "/h1").text.gsub(/[\u00A0\s\t\r\n]/, ' ').strip
+      year = titleize day_page.at($main_content_xpath + "/h2").text
       event_and_date = day_page.at($main_content_xpath + "/h3").text
       _, event, date = event_and_date.match(/^\s*(.+)\s*\[\s*([^\]]+)\s*\]/).to_a
+      event = titleize(event.gsub(/[\u00A0\s\t\r\n]/, ' ')).strip
 
       interview_links = links_in_main_region(agent, day_page)
 
@@ -74,7 +80,7 @@ agent.get(australian_open) do |page|
               {
                 question: question,
                 answer: answer,
-                person: person
+                person: titleize(person)
               }
             }.compact
 
@@ -82,7 +88,21 @@ agent.get(australian_open) do |page|
 
           date = Date.parse("#{date}, #{year}").to_time.strftime("%Y-%m-%d")
           file = [sport, event, date, people.join(", ")].map { |c| parameterize(c) }.join("/")
-          file = File.join(data_dir, "sports", "#{file}.json")
+          file = File.join(corpus, "sports", "#{file}.json")
+
+          people.map! do |name|
+            {
+              name: name,
+              gender: case
+                when men.include?(parameterize(name)) then
+                  "male"
+                when women.include?(parameterize(name)) then
+                  "female"
+                else
+                  "unknown"
+              end
+            }
+          end
 
           FileUtils.mkdir_p(File.dirname(file))
 
@@ -93,7 +113,7 @@ agent.get(australian_open) do |page|
               event: event,
               date: date,
               people: people,
-              # text: raw_text,
+              text: raw_text,
               interview: qanda
             })
           end

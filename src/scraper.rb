@@ -87,7 +87,7 @@ agent.get(australian_open) do |page|
           people = interview_page.search("//h3/a").map(&:text)
 
           date = Date.parse("#{date}, #{year}").to_time.strftime("%Y-%m-%d")
-          file = [sport, event, date, people.join(", ")].map { |c| parameterize(c) }.join("/")
+          file = [sport, event, *date.split('-'), people.join(", ")].map { |c| parameterize(c) }.join("/")
           file = File.join(corpus, "sports", "#{file}.json")
 
           people.map! do |name|

@@ -22,7 +22,7 @@
 
 (def interview (parse-stream
                 (clojure.java.io/reader
-                 (resource "corpus/sports/tennis/australian-open/2013-01-12/andy-murray.json"))
+                 (resource "corpus/sports/tennis/australian-open/2013/01/12/andy-murray.json"))
                 true))
 
 (def andy-murray-text (str/join " " (map :answer (:interview interview))))
